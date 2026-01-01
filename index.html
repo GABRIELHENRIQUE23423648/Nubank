@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nubank Jovem • Simulação</title>
+
+<style>
+:root{
+  --roxo:#8a05be;
+  --bg:#121212;
+  --card:#1e1e1e;
+  --verde:#2ecc71;
+  --vermelho:#e74c3c;
+  --cinza:#999;
+}
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;background:var(--bg);color:#fff}
+.hidden{display:none}
+.container{max-width:420px;margin:auto;padding:15px}
+.card{background:var(--card);border-radius:16px;padding:15px;margin-bottom:15px}
+button{background:var(--roxo);border:none;color:#fff;padding:10px;width:100%;border-radius:12px;font-size:15px;cursor:pointer}
+button.secondary{background:#2a2a2a}
+input{width:100%;padding:10px;border-radius:10px;border:none;margin-bottom:10px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.small{font-size:13px;color:var(--cinza)}
+.valor.negativo{color:var(--vermelho)}
+.valor.positivo{color:var(--verde)}
+.badge{background:#2a2a2a;padding:5px 10px;border-radius:20px;font-size:12px}
+.extrato div{border-bottom:1px solid #2a2a2a;padding:8px 0;font-size:14px}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="container">
+  <h2>Conta Jovem</h2>
+  <input type="password" id="pin" placeholder="PIN (2012)">
+  <button onclick="entrar()">Entrar</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="container hidden">
+
+  <div class="top">
+    <div>
+      <strong id="nome"></strong><br>
+      <span class="small">Idade: <span id="idade"></span></span>
+    </div>
+    <span class="badge">Débito</span>
+  </div>
+
+  <div class="card">
+    <div class="top">
+      <span>Saldo</span>
+      <button class="secondary" style="width:auto" onclick="toggleSaldo()">👁️</button>
+    </div>
+    <h2 id="saldo"></h2>
+  </div>
+
+  <!-- PIX -->
+  <div class="card">
+    <h3>Pix</h3>
+    <input type="number" id="valorPix" placeholder="Valor do Pix">
+    <button onclick="enviarPix()">Enviar Pix</button>
+    <button class="secondary" onclick="receberPix()">Receber Pix</button>
+    <p id="statusPix" class="small"></p>
+  </div>
+
+  <!-- CARTÃO -->
+  <div class="card">
+    <h3>Compra no Débito</h3>
+    <input type="text" id="descCompra" placeholder="Descrição">
+    <input type="number" id="valorCompra" placeholder="Valor">
+    <button onclick="comprar()">Comprar</button>
+  </div>
+
+  <!-- EXTRATO -->
+  <div class="card">
+    <h3>Extrato</h3>
+    <div id="extrato"></div>
+  </div>
+
+  <!-- PAINEL -->
+  <div class="card">
+    <h3>⚙️ Painel</h3>
+    <input type="password" id="pinPainel" placeholder="PIN do painel">
+    <button class="secondary" onclick="abrirPainel()">Abrir painel</button>
+
+    <div id="painel" class="hidden">
+      <hr>
+      <input id="editNome" placeholder="Nome">
+      <input id="editIdade" type="number" placeholder="Idade">
+      <input id="editSaldo" type="number" placeholder="Saldo">
+      <input id="limiteDiario" type="number" placeholder="Limite diário">
+      <button onclick="salvarPainel()">Salvar</button>
+      <button class="secondary" onclick="resetar()">Resetar tudo</button>
+    </div>
+  </div>
+
+  <p class="small" style="text-align:center">
+    Simulação • Não é banco real
+  </p>
+
+</div>
+
+<script>
+const PIN="2012";
+let mostrarSaldo=true;
+
+let dados=JSON.parse(localStorage.getItem("nubankJovem"))||{
+  nome:"Pedro",
+  idade:14,
+  saldo:500,
+  limiteDiario:200,
+  gastoHoje:0,
+  extrato:[]
+};
+
+function salvar(){
+  localStorage.setItem("nubankJovem",JSON.stringify(dados));
+  render();
+}
+
+function entrar(){
+  if(pin.value===PIN){
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    render();
+  } else alert("PIN incorreto");
+}
+
+function render(){
+  nome.innerText=dados.nome;
+  idade.innerText=dados.idade;
+  saldo.innerText=mostrarSaldo?`R$ ${dados.saldo.toFixed(2)}`:"••••";
+  saldo.className=dados.saldo<0?"valor negativo":"valor positivo";
+
+  extrato.innerHTML="";
+  dados.extrato.slice().reverse().forEach(e=>{
+    extrato.innerHTML+=`
+      <div class="${e.valor<0?'valor negativo':'valor positivo'}">
+        ${e.desc} — R$ ${e.valor.toFixed(2)}
+      </div>`;
+  });
+}
+
+function toggleSaldo(){mostrarSaldo=!mostrarSaldo;render();}
+
+function enviarPix(){
+  let v=Number(valorPix.value);
+  if(v<=0) return;
+  if(v>dados.saldo) return alert("Saldo insuficiente");
+  if(dados.gastoHoje+v>dados.limiteDiario) return alert("Limite diário atingido");
+
+  statusPix.innerText="Processando Pix...";
+  setTimeout(()=>{
+    dados.saldo-=v;
+    dados.gastoHoje+=v;
+    dados.extrato.push({desc:"Pix enviado",valor:-v});
+    statusPix.innerText="Pix enviado ✅";
+    salvar();
+  },5000);
+}
+
+function receberPix(){
+  let v=Number(valorPix.value);
+  if(v<=0) return;
+
+  statusPix.innerText="Recebendo Pix...";
+  setTimeout(()=>{
+    dados.saldo+=v;
+    dados.extrato.push({desc:"Pix recebido",valor:v});
+    statusPix.innerText="Pix recebido ✅";
+    salvar();
+  },5000);
+}
+
+function comprar(){
+  let v=Number(valorCompra.value);
+  let d=descCompra.value||"Compra débito";
+  if(v<=0) return;
+  if(v>dados.saldo) return alert("Saldo insuficiente");
+  if(dados.gastoHoje+v>dados.limiteDiario) return alert("Limite diário atingido");
+
+  dados.saldo-=v;
+  dados.gastoHoje+=v;
+  dados.extrato.push({desc:d,valor:-v});
+  salvar();
+}
+
+function abrirPainel(){
+  if(pinPainel.value===PIN){
+    painel.classList.remove("hidden");
+    editNome.value=dados.nome;
+    editIdade.value=dados.idade;
+    editSaldo.value=dados.saldo;
+    limiteDiario.value=dados.limiteDiario;
+  } else alert("PIN errado");
+}
+
+function salvarPainel(){
+  dados.nome=editNome.value;
+  dados.idade=Number(editIdade.value);
+  dados.saldo=Number(editSaldo.value);
+  dados.limiteDiario=Number(limiteDiario.value);
+  salvar();
+}
+
+function resetar(){
+  if(confirm("Resetar tudo?")){
+    localStorage.removeItem("nubankJovem");
+    location.reload();
+  }
+}
+</script>
+
+</body>
+      </html>
