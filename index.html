@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -93,7 +94,6 @@ input{width:100%;padding:10px;border-radius:10px;border:none;margin-bottom:10px}
       <input id="editNome" placeholder="Nome">
       <input id="editIdade" type="number" placeholder="Idade">
       <input id="editSaldo" type="number" placeholder="Saldo">
-      <input id="limiteDiario" type="number" placeholder="Limite diário">
       <button onclick="salvarPainel()">Salvar</button>
       <button class="secondary" onclick="resetar()">Resetar tudo</button>
     </div>
@@ -113,8 +113,6 @@ let dados=JSON.parse(localStorage.getItem("nubankJovem"))||{
   nome:"Pedro",
   idade:14,
   saldo:500,
-  limiteDiario:200,
-  gastoHoje:0,
   extrato:[]
 };
 
@@ -152,12 +150,10 @@ function enviarPix(){
   let v=Number(valorPix.value);
   if(v<=0) return;
   if(v>dados.saldo) return alert("Saldo insuficiente");
-  if(dados.gastoHoje+v>dados.limiteDiario) return alert("Limite diário atingido");
 
   statusPix.innerText="Processando Pix...";
   setTimeout(()=>{
     dados.saldo-=v;
-    dados.gastoHoje+=v;
     dados.extrato.push({desc:"Pix enviado",valor:-v});
     statusPix.innerText="Pix enviado ✅";
     salvar();
@@ -182,10 +178,8 @@ function comprar(){
   let d=descCompra.value||"Compra débito";
   if(v<=0) return;
   if(v>dados.saldo) return alert("Saldo insuficiente");
-  if(dados.gastoHoje+v>dados.limiteDiario) return alert("Limite diário atingido");
 
   dados.saldo-=v;
-  dados.gastoHoje+=v;
   dados.extrato.push({desc:d,valor:-v});
   salvar();
 }
@@ -196,7 +190,6 @@ function abrirPainel(){
     editNome.value=dados.nome;
     editIdade.value=dados.idade;
     editSaldo.value=dados.saldo;
-    limiteDiario.value=dados.limiteDiario;
   } else alert("PIN errado");
 }
 
@@ -204,7 +197,6 @@ function salvarPainel(){
   dados.nome=editNome.value;
   dados.idade=Number(editIdade.value);
   dados.saldo=Number(editSaldo.value);
-  dados.limiteDiario=Number(limiteDiario.value);
   salvar();
 }
 
@@ -217,4 +209,4 @@ function resetar(){
 </script>
 
 </body>
-      </html>
+</html>
